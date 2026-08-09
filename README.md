@@ -2,8 +2,6 @@
 
 A visitor management MVP that replaces manual logbooks with digital registration, QR-code visitor passes, role-based check-in/check-out, and basic reporting.
 
-Based on the DICT 240 Software Project Proposal by Esther Wanjiku Angela Muigai.
-
 ---
 
 ## Features
@@ -235,16 +233,6 @@ The following were deliberately left out of this MVP and can be added later with
 - Real-time WebSocket alerts, SMS notifications
 - CCTV integration, multiple physical access points
 - Biometric or facial recognition
-- Camera-based in-browser QR scanning (a $15 USB QR scanner works today with the existing manual-entry Verify Pass screen — no code changes needed)
+- Camera-based in-browser QR scanning (a USB QR scanner works today with the existing manual-entry Verify Pass screen — no code changes needed)
 - Advanced audit analytics, PDF/Excel report export
 - Automated backup management interface
-
----
-
-## Troubleshooting
-
-- **`ModuleNotFoundError: No module named 'django'`** — your virtual environment isn't activated. Run `source venv/bin/activate` (Linux) or `venv\Scripts\activate` (Windows) from inside `backend/`.
-- **CORS errors in the browser console** — confirm `django-cors-headers` is installed and `CORS_ALLOWED_ORIGINS` in `settings.py` includes `http://localhost:5173`.
-- **`InvalidMailer: OPTIONS must define 'host'`** — Django 6.1's `MAILERS` setting requires SMTP config nested under an `OPTIONS` key, not as siblings of `BACKEND`. See the `MAILERS` block in `backend/config/settings.py` for the correct structure.
-- **Login fails with correct-looking credentials** — confirm the user's `Active` checkbox is ticked in Django admin, and double-check for typos by resetting the password directly rather than guessing.
-- **Settings changes not taking effect** — confirm the file is actually saved (check for an unsaved-changes indicator in your editor) before restarting the server.
