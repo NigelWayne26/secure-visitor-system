@@ -16,8 +16,10 @@ export const VisitsPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [createLoading, setCreateLoading] = useState(false);
   const [passLoadingId, setPassLoadingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -30,6 +32,7 @@ export const VisitsPage: React.FC = () => {
     purpose: '',
     expected_date: new Date().toISOString().split('T')[0],
     expected_time: '10:00:00',
+    is_group_visit: false,
   });
 
   const loadData = async () => {
@@ -54,31 +57,60 @@ export const VisitsPage: React.FC = () => {
     loadData();
   }, []);
 
+  const resetForm = () => {
+    setFormData({
+      visitor: visitors[0]?.id || 0,
+      host_employee: employees[0]?.id || 0,
+      purpose: '',
+      expected_date: new Date().toISOString().split('T')[0],
+      expected_time: '10:00:00',
+      is_group_visit: false,
+    });
+    setTimeError(null);
+  };
+
+  const handleOpenModal = () => {
+    resetForm();
+    setError(null);
+    setIsScheduleModalOpen(true);
+  };
+
   const handleCreateVisit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.visitor || !formData.host_employee) {
+    setError(null);
+    setTimeError(null);
+
+    const visitorId = Number(formData.visitor) || visitors[0]?.id;
+    const hostId = Number(formData.host_employee) || employees[0]?.id;
+
+    if (!visitorId || !hostId) {
       setError('Please select both a visitor and a host employee.');
       return;
     }
 
+    setCreateLoading(true);
     try {
       await visitApi.createVisit({
         ...formData,
-        visitor: Number(formData.visitor),
-        host_employee: Number(formData.host_employee),
+        visitor: visitorId,
+        host_employee: hostId,
+        is_group_visit: !!formData.is_group_visit,
       });
       setSuccess('Visit scheduled successfully.');
       setIsScheduleModalOpen(false);
-      setFormData({
-        visitor: 0,
-        host_employee: 0,
-        purpose: '',
-        expected_date: new Date().toISOString().split('T')[0],
-        expected_time: '10:00:00',
-      });
+      resetForm();
       loadData();
-    } catch (err) {
-      setError(parseApiError(err));
+    } catch (err: any) {
+      if (err.response?.data?.expected_time) {
+        const msg = Array.isArray(err.response.data.expected_time)
+          ? err.response.data.expected_time.join(' ')
+          : err.response.data.expected_time;
+        setTimeError(msg);
+      } else {
+        setError(parseApiError(err));
+      }
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -103,7 +135,7 @@ export const VisitsPage: React.FC = () => {
           <h2 className="text-xl font-bold text-slate-800">Visit Management</h2>
           <p className="text-sm text-slate-500">Schedule appointments and generate visitor QR passes</p>
         </div>
-        <Button onClick={() => setIsScheduleModalOpen(true)}>+ Schedule Visit</Button>
+        <Button onClick={handleOpenModal}>+ Schedule Visit</Button>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
@@ -187,9 +219,15 @@ export const VisitsPage: React.FC = () => {
           <Select
             label="Select Visitor"
             required
-            options={visitors.map((v) => ({ value: v.id, label: `${v.full_name} (${v.id_number})` }))}
+            options={visitors.map((v) => ({
+              value: v.id,
+              label: `${v.full_name} (${v.phone || v.email || v.id_number || 'No contact'})`,
+            }))}
             value={formData.visitor}
-            onChange={(e) => setFormData({ ...formData, visitor: Number(e.target.value) })}
+            onChange={(e) => {
+              setFormData({ ...formData, visitor: Number(e.target.value) });
+              setTimeError(null);
+            }}
           />
           <Select
             label="Select Host Employee"
@@ -199,7 +237,10 @@ export const VisitsPage: React.FC = () => {
               label: e.full_name || `${e.first_name || ''} ${e.last_name || ''} (${e.email})`.trim(),
             }))}
             value={formData.host_employee}
-            onChange={(e) => setFormData({ ...formData, host_employee: Number(e.target.value) })}
+            onChange={(e) => {
+              setFormData({ ...formData, host_employee: Number(e.target.value) });
+              setTimeError(null);
+            }}
           />
           <Input
             label="Purpose of Visit"
@@ -213,7 +254,10 @@ export const VisitsPage: React.FC = () => {
               type="date"
               required
               value={formData.expected_date}
-              onChange={(e) => setFormData({ ...formData, expected_date: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, expected_date: e.target.value });
+                setTimeError(null);
+              }}
             />
             <Input
               label="Expected Time"
@@ -221,14 +265,41 @@ export const VisitsPage: React.FC = () => {
               step="1"
               required
               value={formData.expected_time}
-              onChange={(e) => setFormData({ ...formData, expected_time: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, expected_time: e.target.value });
+                setTimeError(null);
+              }}
             />
           </div>
+
+          {/* Time collision warning display */}
+          {timeError && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 leading-relaxed font-medium">
+              ⚠️ {timeError}
+            </div>
+          )}
+
+          {/* Group Visit Checkbox */}
+          <div className="flex items-center gap-2 mt-2 pt-1">
+            <input
+              type="checkbox"
+              id="is_group_visit"
+              checked={!!formData.is_group_visit}
+              onChange={(e) => setFormData({ ...formData, is_group_visit: e.target.checked })}
+              className="h-4 w-4 text-slate-900 border-slate-300 rounded focus:ring-slate-900 cursor-pointer"
+            />
+            <label htmlFor="is_group_visit" className="text-sm text-slate-700 cursor-pointer select-none">
+              Group visit (multiple visitors seeing this host together)
+            </label>
+          </div>
+
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" type="button" onClick={() => setIsScheduleModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit">Schedule</Button>
+            <Button type="submit" isLoading={createLoading}>
+              Schedule
+            </Button>
           </div>
         </form>
       </Modal>
@@ -279,4 +350,4 @@ export const VisitsPage: React.FC = () => {
       <QRCodeModal isOpen={!!qrVisit} onClose={() => setQrVisit(null)} visit={qrVisit} />
     </div>
   );
-};``
+};

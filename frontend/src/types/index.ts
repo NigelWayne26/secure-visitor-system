@@ -86,8 +86,9 @@ export interface CreateVisitDTO {
   visitor: number;
   host_employee: number;
   purpose: string;
-  expected_date: string;
-  expected_time: string;
+  expected_date: string; // YYYY-MM-DD
+  expected_time: string; // HH:MM or HH:MM:SS
+  is_group_visit?: boolean;
 }
 
 export interface VisitorPass {

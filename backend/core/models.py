@@ -57,6 +57,10 @@ class Visit(models.Model):
     purpose = models.CharField(max_length=255)
     expected_date = models.DateField()
     expected_time = models.TimeField()
+    is_group_visit = models.BooleanField(
+        default=False,
+        help_text="Check this if multiple visitors are intentionally scheduled to see this host at the same time."
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
     check_in_time = models.DateTimeField(null=True, blank=True)
     check_out_time = models.DateTimeField(null=True, blank=True)

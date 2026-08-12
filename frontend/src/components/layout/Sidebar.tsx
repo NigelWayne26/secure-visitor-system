@@ -18,7 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       <div>
         <div className="px-3 py-4 mb-6">
           <h1 className="text-white text-lg font-bold tracking-wider">SECURE ACCESS</h1>
-          <p className="text-xs text-slate-400 mt-0.5">Visitor Management v1.0</p>
+          <p className="text-xs text-slate-400 mt-0.5">Visitor Management</p>
         </div>
         <nav className="space-y-1">
           <button
